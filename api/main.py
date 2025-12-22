@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Query
 import psycopg
 import os
 
@@ -33,7 +33,7 @@ def stop_focus(data: dict, x_api_key: str = Header(...)):
     check_key(x_api_key)
     with get_conn() as conn:
         with conn.cursor() as cur:
-       	    cur.execute(
+            cur.execute(
                 """
                 UPDATE focus_sessions
                 SET end_time = NOW()
@@ -82,9 +82,9 @@ def daily_stats(x_api_key: str = Header(...)):
                 SELECT
                     DATE(start_time) AS day,
                     focus_name,
-		    COUNT(*) AS activations,
+                    COUNT(*) AS activations,
                     SUM(EXTRACT(EPOCH FROM COALESCE(end_time, NOW()) - start_time)/3600) AS duration_hours
-		FROM focus_sessions
+                    FROM focus_sessions
                 GROUP BY day, focus_name
                 ORDER BY day, focus_name
             """)
@@ -94,20 +94,25 @@ def daily_stats(x_api_key: str = Header(...)):
             ]
 
 @app.get("/stats/weekly")
-def weekly_stats(x_api_key: str = Header(...)):
+def weekly_stats(
+        x_api_key: str = Header(...),
+        week_offset: int = Query(default=0,description="0 = aktuelle Woche, -1 = letzte, -2 = vorletzte, …"),
+):
     check_key(x_api_key)
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT
-                    DATE_TRUNC('week', start_time)::date AS week_start,
+                    DATE(start_time) AS day,
                     focus_name,
-		    COUNT(*) AS activations,
+                    COUNT(*) AS activations,
                     SUM(EXTRACT(EPOCH FROM COALESCE(end_time, NOW()) - start_time)/3600) AS duration_hours
                 FROM focus_sessions
-                GROUP BY week_start, focus_name
-                ORDER BY week_start, focus_name
-            """)
+                WHERE start_time >= date_trunc('week', NOW()) + (%s * INTERVAL '1 week')
+                AND start_time <  date_trunc('week', NOW()) + ((%s + 1) * INTERVAL '1 week')
+                GROUP BY day, focus_name
+                ORDER BY day, focus_name
+            """, (week_offset, week_offset))
             rows = cur.fetchall()
             return [
                 {"week_start": r[0], "focus": r[1], "hours": float(r[3]), "activations": r[2]} for r in rows
@@ -122,8 +127,8 @@ def monthly_stats(x_api_key: str = Header(...)):
                 SELECT
                     DATE_TRUNC('month', start_time)::date AS month_start,
                     focus_name,
-		    COUNT(*) AS activations,
-		    SUM(EXTRACT(EPOCH FROM COALESCE(end_time, NOW()) - start_time)/3600) AS duration_hours
+                    COUNT(*) AS activations,
+                    SUM(EXTRACT(EPOCH FROM COALESCE(end_time, NOW()) - start_time)/3600) AS duration_hours
                 FROM focus_sessions
                 GROUP BY month_start, focus_name
                 ORDER BY month_start, focus_name
