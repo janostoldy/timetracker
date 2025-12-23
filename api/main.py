@@ -74,7 +74,10 @@ def current_focus(x_api_key: str = Header(...)):
             }
 
 @app.get("/stats/daily")
-def daily_stats(x_api_key: str = Header(...)):
+def daily_stats(
+        x_api_key: str = Header(...),
+        day_offset: int = 0,
+    ):
     check_key(x_api_key)
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -84,10 +87,12 @@ def daily_stats(x_api_key: str = Header(...)):
                     focus_name,
                     COUNT(*) AS activations,
                     SUM(EXTRACT(EPOCH FROM COALESCE(end_time, NOW()) - start_time)/3600) AS duration_hours
-                    FROM focus_sessions
+                FROM focus_sessions
+                WHERE start_time >= date_trunc('day', NOW()) + (%s * INTERVAL '1 day')
+                AND start_time <  date_trunc('day', NOW()) + ((%s + 1) * INTERVAL '1 day')
                 GROUP BY day, focus_name
                 ORDER BY day, focus_name
-            """)
+            """, (day_offset, day_offset))
             rows = cur.fetchall()
             return [
                 {"day": r[0], "focus": r[1], "hours": float(r[3]), "activations": r[2]} for r in rows
@@ -96,7 +101,7 @@ def daily_stats(x_api_key: str = Header(...)):
 @app.get("/stats/weekly")
 def weekly_stats(
         x_api_key: str = Header(...),
-        week_offset: int = Query(default=0,description="0 = aktuelle Woche, -1 = letzte, -2 = vorletzte, …"),
+        week_offset: int = 0,
 ):
     check_key(x_api_key)
     with get_conn() as conn:
