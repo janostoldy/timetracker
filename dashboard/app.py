@@ -17,13 +17,19 @@ app = Dash()
 default_df = pd.DataFrame(columns=["day","focus","hours","activations"])
 
 # Status Heute
-daily = pd.DataFrame(daily_stats(API_KEY,-1))
+try:
+    daily = pd.DataFrame(daily_stats(API_KEY,-1))
+except:
+    daily = default_df
 if daily.empty:
     daily = default_df
 fig_day = px.bar(daily, x="focus", y="hours")
 
 #Status Woche
-weekly = pd.DataFrame(weekly_stats(API_KEY,-1))
+try:
+    weekly = pd.DataFrame(weekly_stats(API_KEY,-1))
+except:
+    weekly= default_df
 if weekly.empty:
     weekly = default_df
 fig_week = px.bar(weekly, x="focus", y="hours")
