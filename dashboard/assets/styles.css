@@ -1,6 +1,7 @@
 .app-header {
     height: 70px;
     line-height: 70px;
+    width: 100%;
     border-bottom: thin lightgrey solid;
     position: sticky;
     top: 0;
@@ -17,6 +18,8 @@
     max-width: 800px;
     margin: 0 auto;          /* zentriert */
     padding: 0 32px;         /* links & rechts */
+    border-radius: 10px;
+    background-color: #fff; /* Wichtig, damit der Inhalt nicht durchscheint */
 }
 .app-container .app-container--title {
     padding-top: 20px;
