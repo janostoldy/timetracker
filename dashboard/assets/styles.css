@@ -17,10 +17,13 @@
 .app-container {
     max-width: 800px;
     margin: 0 auto;          /* zentriert */
-    padding: 0 32px;         /* links & rechts */
+    padding: 0 32px;         /*  links & rechts */
+    border: thin lightgrey solid;
     border-radius: 10px;
-    background-color: #fff; /* Wichtig, damit der Inhalt nicht durchscheint */
+    background-color: #fff;
+    box-shadow: 5px 5px 2px 1px rgb(0 0 0 / 0.2);
 }
+
 .app-container .app-container--title {
     padding-top: 20px;
     font-size: 30px;
